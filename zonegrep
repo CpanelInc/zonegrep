@@ -1,0 +1,22 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+# by Christopher E. Stith for cPanel, 2016-12-15
+my $search_term = shift @ARGV;
+print search( $search_term, $_ ) foreach @ARGV;
+exit;
+
+sub search {
+        my ( $st, $zf ) = @_;
+        open my $in, '<', $zf or return "Can't open zone file $zf : $!\n";
+        my $found = my $o = '';
+        while ( <$in> ) {
+                my $pad = 8 - length "$.";
+                $o = ( sprintf "%s:%d:%$pad.4s%s", $zf, $., '', $_ ), next if m/^\$ORIGIN\s+(\S+)\s*$/;
+                $found .= ( sprintf "%s%s:%d:%$pad.4s%s", $o , $zf, $., '', $_ ) if ( m/$st/ or ( $o =~ m/$st/ && m/\S/ ) );
+                $found .= search( $st, $1 ) if m/^\$INCLUDE \s+ (\S+) \s*$/x;
+        }
+        return $found;
+        close $zf;
+}
+
